@@ -1,0 +1,13 @@
+{
+  "name": "Rohmann's Bundle Workflow",
+  "description": "Rohmann GmbH CI workflow template.",
+  "iconName": "box",
+  "categories": [
+      "Python"
+  ],
+  "filePatterns": [
+      "package.json$",
+      "^Dockerfile",
+      ".*\\.md$"
+  ]
+}
