@@ -1,0 +1,265 @@
+#######################################################
+# This is the main CI workflow build/test/deploy 
+# for <template> package
+#######################################################
+# - The workflow creates a debian package
+# - Test to install and uninstall package
+# - Deploys the package into <template> bundle
+#######################################################
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events
+  #push:
+  #pull_request:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Trigger (e.g. manual, test, ...)'     
+        required: true
+        default: 'manual'
+      update-submodules:
+        description: 'Auto-update-submodules (true or false)'     
+        required: true
+        default: 'false'
+      deploy:
+        description: 'Auto-deploy (true or false)'     
+        required: true
+        default: 'false'
+      alt-ref:
+        description: 'Alternative reference: branch or tag (empty = default-branch)'     
+        required: false
+        default: ''
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # Show trigger info and check input
+  Trigger:
+    name: Trigger ${{github.event.inputs.trigger}} on ${{github.ref}}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Show trigger information
+      - name: Show trigger information
+        run: |
+            echo "Trigger: ${{github.event.inputs.trigger}}"
+            echo "Reference: ${{github.ref}}"
+            echo "SHA: ${{github.sha}}"
+            echo "Actor: ${{github.actor}}"
+            echo "Auto-update-submodules: ${{github.event.inputs.update-submodules}}"
+            echo "Auto-deploy: ${{github.event.inputs.deploy}}"
+            echo "Alternative-reference: ${{github.event.inputs.alt-ref}}"
+
+      # Check input Auto-update-submodules
+      - name: Check input Auto-update-submodules
+        if: ${{github.event.inputs.update-submodules != 'true' && github.event.inputs.update-submodules != 'false'}}
+        run: |
+            echo Wrong input on Auto-update-submodules "${{github.event.inputs.update-submodules}}"
+            exit 1
+      
+      # Check input Auto-deploy
+      - name: Check input Auto-deploy
+        if: ${{ github.event.inputs.deploy != 'true' && github.event.inputs.deploy != 'false'}}
+        run: |
+            echo "Wrong input on Auto-deploy "${{github.event.inputs.deploy}}"
+            exit 1
+
+  # Update submodules
+  Update:
+    # run only when trigger is passed
+    needs: Trigger
+    # run if Auto-update-submodules is active
+    if: ${{github.event.inputs.update-submodules == 'true'}}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checksout action repository and submodules under $GITHUB_WORKSPACE
+      # (workaround till submodules are availible for private organzisation use)
+      - name: Checkout action with submodules
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
+          repository: rohmanngmbh/action-update-submodules
+          submodules: recursive
+
+      # Run update submodules using action
+      - name: Update submodule
+        uses: ./
+        with:
+          token: ${{ secrets.CI_PAT_FOR_UPDATE_SUBMODULES }} # is a secret that contains our PAT
+          alt-ref: ${{github.event.inputs.alt-ref}}
+
+  # Runs docker and build in type: release
+  Build:
+    # run if >Update< is 'passed' or 'skipped'
+    needs: Update
+    if: ${{always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success') && needs.Trigger.result == 'success'}}
+
+    # ensure that only a single run or job is in progress on docker-build-server
+    concurrency: docker
+
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+
+	# Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out repository and submodules under $GITHUB_WORKSPACE
+      - name: Checkout with submodules
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
+          ref: ${{ github.ref }} # take head of branch
+          submodules: recursive
+
+      # Run build on docker container
+      - name: Run build
+        shell: bash {0}
+        run: |
+          export TARGET_PATH=/home/maxwell/workspace/maxwell/<template>
+          export RUN_AS_ROOT=$GITHUB_WORKSPACE/run-as-root
+          echo "groupadd -g 1001 github" >$RUN_AS_ROOT
+          echo "useradd -g github --uid 1001 -m github" >>$RUN_AS_ROOT
+          echo "cd $TARGET_PATH" >>$RUN_AS_ROOT 
+          echo "su github ./build-x86_64-linux" >>$RUN_AS_ROOT
+          chmod +x $RUN_AS_ROOT
+          docker run --rm --mount type=bind,source=$GITHUB_WORKSPACE,target=$TARGET_PATH --name ctr-build-maxwell-<template>-package esr/pl600_mb2:latest \
+                     /bin/bash -c "cd $TARGET_PATH; ./run-as-root"
+
+      # Show output files (debug)
+      - name: Show output files
+        run: |
+          cd build-x86_64-linux-Release
+          ls -la
+
+      # Upload files
+      - name: Upload files
+        uses: actions/upload-artifact@v2
+        with:
+          name: <template>-package
+          path: 'build-x86_64-linux-Release/*.deb'
+          if-no-files-found: error
+
+  # Install and uninstall the package
+  Test:
+    # run only when trigger is passed and if >Update< is 'passed' or 'skipped'
+    needs: Build
+    if: ${{always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success') && needs.Build.result == 'success'}}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Download
+      - name: Download files of build job
+        uses: actions/download-artifact@v2
+        with:
+          name: <template>-package
+
+      # Print some information
+      - name: Show system information
+        run: |
+          cat /etc/os-release
+          whoami
+          ls -la
+
+      # Install Package
+      - name: Install Package
+        run: sudo dpkg -i *.deb
+
+      # Test Package
+      # get status information
+      - name: Test Package
+        run: dpkg --status pl600-client
+
+      # Test Client
+      # start and stop client
+      - name: Test Client
+        run: |
+          echo 42
+
+      # Uninstall Package
+      - name: Uninstall Package
+        run: sudo dpkg -r pl600-client
+
+  # Create branch in deploy repository if necessary
+  Prepare-Deploy:
+    # run only when test is passed
+    needs: Test
+    # runs only if deploy flag is set AND run if >Update< is 'passed' or 'skipped'    
+    if: ${{github.event.inputs.deploy == 'true' && always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success') && needs.Build.result == 'success'}}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checksout action repository and submodules under $GITHUB_WORKSPACE
+      # (workaround till submodules are availible for private organzisation use)
+      - name: Checkout action with submodules
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
+          repository: rohmanngmbh/action-create-branch
+          submodules: recursive
+
+      # Run create branch
+      - name: Create branch
+        uses: ./
+        with:
+          token: ${{ secrets.CI_PAT_FOR_UPDATE_SUBMODULES }} # is a secret that contains our PAT
+          repository: rohmanngmbh/<ee-template-build>
+          branch: ${{ github.ref }}
+          base: ${{github.event.inputs.alt-ref}}
+
+  # Pushes the package file into the update repository
+  Deploy:
+    # run only when Prepare-Deploy is passed
+    needs: Prepare-Deploy  
+    # runs only if deploy flag is set AND run if >Update< is 'passed' or 'skipped'  
+    if: ${{github.event.inputs.deploy == 'true' && always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success') && needs.Prepare-Deploy.result == 'success'}}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checkout deploy repo
+      - name: Checkout deploy repository with submodules
+        uses: actions/checkout@v2
+        with:
+          repository: rohmanngmbh/<ee-template-build>
+          ref: ${{ github.ref }} # take head of branch
+          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
+          submodules: recursive
+
+      # Remove old file
+      - name: Remove old file
+        run: |
+          cd pl600/home_maxwell_update
+          FILE=$(ls pl600-client*)
+          echo "$FILE"
+          rm -f $FILE
+
+      # Download
+      - name: Download files of build job
+        uses: actions/download-artifact@v2
+        with:
+          name: client-package
+          path: pl600/home_maxwell_update
+
+      # Commit and Push
+      - name: Commit
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "update[bot]"
+          git add --all
+          git commit -m "Update client package" || echo "No changes to commit"
+          git push
