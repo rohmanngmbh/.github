@@ -1,5 +1,1 @@
-## Rohmann GmbH
-
-### Eddy Current test instruments and systems
-
 Since 1977 years we have been developing, producing and marketing eddy current instruments and systems for testing that are in use around the world today in crack, heat-treatment, positive material identification, and grinding burn tests. Testing solutions for every problem and every need. Made in Germany.
