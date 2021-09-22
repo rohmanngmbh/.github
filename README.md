@@ -1,2 +1,2 @@
 # .github
-Repository of Rohmann GmbH for templates and our profile
+Repository of Rohmann GmbH for workflow templates and our profile
