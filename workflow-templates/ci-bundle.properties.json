@@ -1,7 +1,7 @@
 {
   "name": "Rohmann's Bundle Workflow",
   "description": "Workflow template for a typical bundle.",
-  "iconName": "box",
+  "iconName": "bundle",
   "categories": [
       "Python"
   ],

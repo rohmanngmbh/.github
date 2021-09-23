@@ -1,7 +1,7 @@
 {
   "name": "Rohmann's Build Chain Workflow",
   "description": "Workflow triggers the total build chain for a <template> project in your bundle, package or submodule.",
-  "iconName": "box",
+  "iconName": "build-chain",
   "categories": [
       "Python"
   ],

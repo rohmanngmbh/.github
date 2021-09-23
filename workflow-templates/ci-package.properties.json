@@ -1,7 +1,7 @@
 {
   "name": "Rohmann's Package Workflow",
   "description": "Workflow template for a typical package.",
-  "iconName": "box",
+  "iconName": "package",
   "categories": [
       "Python"
   ],
