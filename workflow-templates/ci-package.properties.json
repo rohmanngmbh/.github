@@ -1,6 +1,6 @@
 {
   "name": "Rohmann's Package Workflow",
-  "description": "Rohmann GmbH CI workflow template.",
+  "description": "Workflow template for a typical package.",
   "iconName": "box",
   "categories": [
       "Python"
