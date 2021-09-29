@@ -28,7 +28,7 @@ on:
         description: 'Auto-deploy (true or false)'     
         required: true
         default: 'false'
-      alt-ref:
+      alt_ref:
         description: 'Alternative reference: branch or tag (empty = default-branch)'     
         required: false
         default: ''
@@ -52,7 +52,7 @@ jobs:
             echo "Actor: ${{github.actor}}"
             echo "Auto-update-submodules: ${{github.event.inputs.update-submodules}}"
             echo "Auto-deploy: ${{github.event.inputs.deploy}}"
-            echo "Alternative-reference: ${{github.event.inputs.alt-ref}}"
+            echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
 
       # Check input Auto-update-submodules
       - name: Check input Auto-update-submodules
@@ -94,7 +94,7 @@ jobs:
         uses: ./
         with:
           token: ${{ secrets.CI_PAT_FOR_UPDATE_SUBMODULES }} # is a secret that contains our PAT
-          alt-ref: ${{github.event.inputs.alt-ref}}
+          alt_ref: ${{github.event.inputs.alt_ref}}
 
   # Runs docker and build in type: release
   Build:
@@ -217,7 +217,7 @@ jobs:
           token: ${{ secrets.CI_PAT_FOR_UPDATE_SUBMODULES }} # is a secret that contains our PAT
           repository: rohmanngmbh/<ee-template-build>
           branch: ${{ github.ref }}
-          base: ${{github.event.inputs.alt-ref}}
+          base: ${{github.event.inputs.alt_ref}}
 
   # Pushes the package file into the update repository
   Deploy:

@@ -24,7 +24,7 @@ on:
         description: 'Trigger (e.g. manual, test, ...)'     
         required: true
         default: 'manual'
-      alt-ref:
+      alt_ref:
         description: 'Alternative reference: branch or tag (empty = default-branch)'     
         required: false
         default: ''
@@ -54,7 +54,7 @@ jobs:
             echo "Reference: ${{github.ref}}"
             echo "SHA: ${{github.sha}}"
             echo "Actor: ${{github.actor}}"
-            echo "Alternative-reference: ${{github.event.inputs.alt-ref}}"
+            echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
             
       # Checksout action repository and submodules under $GITHUB_WORKSPACE
       # (workaround till submodules are availible for private organzisation use)
@@ -73,5 +73,5 @@ jobs:
           trigger: ${{ github.event.inputs.trigger }}
           project: <template>
           ref: ${{ github.ref }}
-          alt-ref: ${{ github.event.inputs.alt-ref }}
+          alt_ref: ${{ github.event.inputs.alt_ref }}
           author: test[bot]
