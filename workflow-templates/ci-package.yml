@@ -32,6 +32,10 @@ on:
         description: 'Alternative reference: branch or tag (empty = default-branch)'     
         required: false
         default: ''
+      deploy_ref:
+        description: 'Reference for deployment: branch or tag (empty = github.ref)'     
+        required: false
+        default: ''
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -41,6 +45,7 @@ jobs:
 
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Show trigger information
@@ -52,7 +57,8 @@ jobs:
             echo "Actor: ${{github.actor}}"
             echo "Auto-update-submodules: ${{github.event.inputs.update-submodules}}"
             echo "Auto-deploy: ${{github.event.inputs.deploy}}"
-            echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
+            echo "Alternative reference: ${{github.event.inputs.alt_ref}}"
+            echo "Deployment reference: ${{github.event.inputs.deploy_ref}}"
 
       # Check input Auto-update-submodules
       - name: Check input Auto-update-submodules
@@ -70,6 +76,7 @@ jobs:
 
   # Update submodules
   Update:
+
     # run only when trigger is passed
     needs: Trigger
     # run if Auto-update-submodules is active
@@ -96,7 +103,7 @@ jobs:
           token: ${{ secrets.CI_PAT_FOR_UPDATE_SUBMODULES }} # is a secret that contains our PAT
           alt_ref: ${{github.event.inputs.alt_ref}}
 
-  # Runs docker and build in type: release
+  # Runs build in type: release
   Build:
     # run if >Update< is 'passed' or 'skipped'
     needs: Update
@@ -189,9 +196,10 @@ jobs:
       - name: Uninstall Package
         run: sudo dpkg -r pl600-client
 
-  # Create branch in deploy repository if necessary
-  Prepare-Deploy:
-    # run only when test is passed
+  # Pushes the package file into the bundle repository
+  Deploy:
+    # run only when Test is passed
+
     needs: Test
     # runs only if deploy flag is set AND run if >Update< is 'passed' or 'skipped'    
     if: ${{github.event.inputs.deploy == 'true' && always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success') && needs.Build.result == 'success'}}
@@ -207,59 +215,29 @@ jobs:
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
-          repository: rohmanngmbh/action-create-branch
+          repository: rohmanngmbh/action-deploy-package
           submodules: recursive
 
-      # Run create branch
-      - name: Create branch
+      # Run deploy using action (called by homepage dispatch)
+      - name: Deploy package into ${{github.ref}}
+        if: ${{github.event.inputs.deploy_ref ==  ''}}
         uses: ./
         with:
-          token: ${{ secrets.CI_PAT_FOR_UPDATE_SUBMODULES }} # is a secret that contains our PAT
-          repository: rohmanngmbh/<ee-template-build>
-          branch: ${{ github.ref }}
-          base: ${{github.event.inputs.alt_ref}}
+          token: ${{secrets.CI_PAT_FOR_UPDATE_SUBMODULES}} # is a secret that contains our PAT
+          project: <template>
+          source_download: <template>-package
+          ref: ${{github.ref}}
+          alt_ref: ${{github.event.inputs.alt_ref}}
+          file_name_struct: <template>-pkg<#>-*
 
-  # Pushes the package file into the update repository
-  Deploy:
-    # run only when Prepare-Deploy is passed
-    needs: Prepare-Deploy  
-    # runs only if deploy flag is set AND run if >Update< is 'passed' or 'skipped'  
-    if: ${{github.event.inputs.deploy == 'true' && always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success') && needs.Prepare-Deploy.result == 'success'}}
-
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checkout deploy repo
-      - name: Checkout deploy repository with submodules
-        uses: actions/checkout@v2
+      # Run deploy using action (called by build-chain dispatch)
+      - name: Deploy package into ${{github.event.inputs.deploy_ref}}
+        if: ${{github.event.inputs.deploy_ref !=  ''}}
+        uses: ./
         with:
-          repository: rohmanngmbh/<ee-template-build>
-          ref: ${{ github.ref }} # take head of branch
-          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
-          submodules: recursive
-
-      # Remove old file
-      - name: Remove old file
-        run: |
-          cd pl600/home_maxwell_update
-          FILE=$(ls pl600-client*)
-          echo "$FILE"
-          rm -f $FILE
-
-      # Download
-      - name: Download files of build job
-        uses: actions/download-artifact@v2
-        with:
-          name: client-package
-          path: pl600/home_maxwell_update
-
-      # Commit and Push
-      - name: Commit
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "update[bot]"
-          git add --all
-          git commit -m "Update client package" || echo "No changes to commit"
-          git push
+          token: ${{secrets.CI_PAT_FOR_UPDATE_SUBMODULES}} # is a secret that contains our PAT
+          project: <template>
+          source_download: <template>-package
+          ref: ${{github.event.inputs.deploy_ref}}
+          alt_ref: ${{github.event.inputs.alt_ref}}
+          file_name_struct: <template>-pkg<#>-*

@@ -10,24 +10,21 @@
 #######################################################
 # - Copy this workflow into your package, bundle or
 #   submodule repository
-# - change <template>
+# - change <template> into <your-project>
 #######################################################
 
 name: Build-Chain <Template>
 
 # Controls when the workflow will run
 on:
+  # Triggers the workflow on pull request events
+  pull_request:
+    types: [opened, synchronize,  reopened, closed]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-    inputs:
-      trigger:
-        description: 'Trigger (e.g. manual, test, ...)'     
-        required: true
-        default: 'manual'
-      alt_ref:
-        description: 'Alternative reference: branch or tag (empty = default-branch)'     
-        required: false
-        default: ''
+  # test
+  issue_comment:                                     
+    types: [created, edited, deleted]
 
 # ensure that only a single run or job is in progress
 concurrency: build-chain-<template>
@@ -40,22 +37,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Check input reference
-      - name: Check input Auto-update-submodules
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: |
-            echo Run on default branch not allowed!
-            exit 1
-
-      # Show trigger information
-      - name: Show trigger information
-        run: |
-            echo "Trigger: ${{github.event.inputs.trigger}}"
-            echo "Reference: ${{github.ref}}"
-            echo "SHA: ${{github.sha}}"
-            echo "Actor: ${{github.actor}}"
-            echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
-            
       # Checksout action repository and submodules under $GITHUB_WORKSPACE
       # (workaround till submodules are availible for private organzisation use)
       - name: Checkout action with submodules
@@ -66,12 +47,8 @@ jobs:
           submodules: recursive
 
       # Run build chain using action
-      - name: Run manual build chain
+      - name: Run build chain
         uses: ./
         with:
           token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
-          trigger: ${{ github.event.inputs.trigger }}
           project: <template>
-          ref: ${{ github.ref }}
-          alt_ref: ${{ github.event.inputs.alt_ref }}
-          author: rohbot[bot]
