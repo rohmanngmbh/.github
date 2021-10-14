@@ -65,7 +65,7 @@ jobs:
           repository: rohmanngmbh/action-build-chain
           submodules: recursive
 
-      # Run build chain using action: manual
+      # Run build chain using action
       - name: Run manual build chain
         uses: ./
         with:
@@ -74,4 +74,4 @@ jobs:
           project: <template>
           ref: ${{ github.ref }}
           alt_ref: ${{ github.event.inputs.alt_ref }}
-          author: test[bot]
+          author: rohbot[bot]
