@@ -1,0 +1,13 @@
+{
+  "name": "Rohmann's Nightly Workflow",
+  "description": "Workflow triggers the total build chain for a <template> project at night.",
+  "iconName": "build-chain",
+  "categories": [
+      "Python"
+  ],
+  "filePatterns": [
+      "package.json$",
+      "^Dockerfile",
+      ".*\\.md$"
+  ]
+}

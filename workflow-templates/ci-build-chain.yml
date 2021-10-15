@@ -4,7 +4,7 @@
 #######################################################
 # Workflow triggers the total build chain for a project
 #
-# With this worklfow you can trigger the total build
+# With this workflow you can trigger the total build
 # chain for your project from your selected repository
 # on your feature-branch/tag
 #######################################################

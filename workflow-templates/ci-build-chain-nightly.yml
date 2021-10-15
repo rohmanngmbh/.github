@@ -1,0 +1,89 @@
+#######################################################
+# This is the nightly workflow build/test/deploy
+# for pipeline <template> project
+#######################################################
+# Workflow triggers the total build chain for a project
+#
+# With this worklfow you can trigger the total build
+# chain for your project on your feature-branch/tag
+#######################################################
+# You can set this worklow as a scheduled workflow
+# to build a nightly
+#######################################################
+
+name: Build-Chain <template>
+
+# Controls when the workflow will run
+on:
+  # workflow runs nightly
+  schedule:
+    # UTC times 00:00 (means 02:00 in Germany)
+    - cron: '0 0 * * *'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Trigger (e.g. manual, ...)'     
+        required: true
+        default: 'manual'
+      ref:
+        description: 'Reference: branch or tag (empty = default-branch)'     
+        required: false
+        default: ''
+      alt_ref:
+        description: 'Alternative reference: branch or tag (empty = default-branch)'     
+        required: false
+        default: ''
+
+# ensure that only a single run or job is in progress
+concurrency: build-chain-<template>
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  Build-Chain:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Show startup information
+      - name: Show startup information
+        run: |
+            echo "Trigger: ${{github.event.inputs.trigger}}"
+            echo "Reference: ${{github.event.inputs.ref}}"
+            echo "SHA: ${{github.sha}}"
+            echo "Actor: ${{github.actor}}"
+            echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
+            
+      # Checksout action repository and submodules under $GITHUB_WORKSPACE
+      # (workaround till submodules are availible for private organzisation use)
+      - name: Checkout action with submodules
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
+          repository: rohmanngmbh/action-build-chain
+          ref: feature/pull
+          submodules: recursive
+
+      # Run build chain using action: nightly
+      - name: Run nightly build chain
+        if: ${{ github.event_name == 'schedule'}}
+        uses: ./
+        with:
+          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
+          trigger: nightly
+          project: <template>
+          ref: develop
+          author: nightly[bot]
+
+      # Run build chain using action: manual trigger
+      - name: Run manual build chain
+        if: ${{ github.event_name != 'schedule'}}
+        uses: ./
+        with:
+          token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
+          trigger: ${{ github.event.inputs.trigger }}
+          project: <template>
+          ref: ${{github.event.inputs.ref}}"
+          alt_ref: ${{github.event.inputs.alt_ref}}"
+          author: update[bot]
