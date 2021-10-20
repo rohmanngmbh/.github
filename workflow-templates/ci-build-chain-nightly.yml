@@ -54,7 +54,7 @@ jobs:
             echo "SHA: ${{github.sha}}"
             echo "Actor: ${{github.actor}}"
             echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
-            
+
       # Checksout action repository and submodules under $GITHUB_WORKSPACE
       # (workaround till submodules are availible for private organzisation use)
       - name: Checkout action with submodules
@@ -62,12 +62,11 @@ jobs:
         with:
           token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
           repository: rohmanngmbh/action-build-chain
-          ref: feature/pull
           submodules: recursive
 
       # Run build chain using action: nightly
       - name: Run nightly build chain
-        if: ${{ github.event_name == 'schedule'}}
+        if: ${{ github.event_name == 'schedule' }}
         uses: ./
         with:
           token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
@@ -76,7 +75,7 @@ jobs:
           ref: develop
           author: nightly[bot]
 
-      # Run build chain using action: manual trigger
+      # Run build chain using action: manual
       - name: Run manual build chain
         if: ${{ github.event_name != 'schedule'}}
         uses: ./
@@ -84,6 +83,6 @@ jobs:
           token: ${{ secrets.CI_PAT_FOR_CHECKOUT_SUBMODULES }} # is a secret that contains our PAT
           trigger: ${{ github.event.inputs.trigger }}
           project: <template>
-          ref: ${{github.event.inputs.ref}}"
-          alt_ref: ${{github.event.inputs.alt_ref}}"
+          ref: ${{ github.event.inputs.ref }}
+          alt_ref: ${{ github.event.inputs.alt_ref }}
           author: update[bot]

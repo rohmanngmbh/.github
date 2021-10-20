@@ -98,7 +98,7 @@ jobs:
 
   # Create a bundle (see rohmanngmbh/ee-maxwell-usb-update-bundling-tool)
   Build:
-    # run if >Update< is 'passed' or 'skipped'
+	# run if >Update< is 'passed' or 'skipped'
     needs: Update
     if: ${{always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success')}}
   
@@ -151,8 +151,7 @@ jobs:
     # run only when build is passed
     needs: Build
     # run if >Update< is 'passed' or 'skipped'    
-    if: ${{always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success')}}  
-
+    if: ${{always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success')}}
 
     # The type of runner that the job will run on: a local runner
     runs-on: [self-hosted, hil-system-1]
