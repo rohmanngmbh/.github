@@ -225,7 +225,7 @@ jobs:
         with:
           token: ${{secrets.CI_PAT_FOR_UPDATE_SUBMODULES}} # is a secret that contains our PAT
           project: <template>
-          source_download: <template>-package
+		  source_download: <template>-package<#>
           ref: ${{github.ref}}
           alt_ref: ${{github.event.inputs.alt_ref}}
           file_name_struct: <template>-pkg<#>-*
