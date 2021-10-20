@@ -32,10 +32,6 @@ on:
         description: 'Alternative reference: branch or tag (empty = default-branch)'     
         required: false
         default: ''
-      deploy_ref:
-        description: 'Reference for deployment: branch or tag (empty = github.ref)'     
-        required: false
-        default: ''
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -58,7 +54,6 @@ jobs:
             echo "Auto-update-submodules: ${{github.event.inputs.update-submodules}}"
             echo "Auto-deploy: ${{github.event.inputs.deploy}}"
             echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
-            echo "Deployment reference: ${{github.event.inputs.deploy_ref}}"
 
       # Check input Auto-update-submodules
       - name: Check input Auto-update-submodules
@@ -104,16 +99,16 @@ jobs:
 
   # Create a bundle (see rohmanngmbh/ee-maxwell-usb-update-bundling-tool)
   Build:
-	# run if >Update< is 'passed' or 'skipped'
+    # run if >Update< is 'passed' or 'skipped'
     needs: Update
     if: ${{always() && (needs.Update.result == 'skipped' || needs.Update.result == 'success')}}
   
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-	# Steps represent a sequence of tasks that will be executed as part of the job
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out repository and submodules under $GITHUB_WORKSPACE
+      # Checks-out repository and submodules repository under $GITHUB_WORKSPACE
       - name: Checkout with submodules
         uses: actions/checkout@v2
         with:
