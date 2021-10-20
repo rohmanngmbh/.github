@@ -32,6 +32,10 @@ on:
         description: 'Alternative reference: branch or tag (empty = default-branch)'     
         required: false
         default: ''
+      deploy_ref:
+        description: 'Reference for deployment: branch or tag (empty = github.ref)'     
+        required: false
+        default: ''
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -41,6 +45,7 @@ jobs:
 
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Show trigger information
@@ -53,6 +58,7 @@ jobs:
             echo "Auto-update-submodules: ${{github.event.inputs.update-submodules}}"
             echo "Auto-deploy: ${{github.event.inputs.deploy}}"
             echo "Alternative-reference: ${{github.event.inputs.alt_ref}}"
+            echo "Deployment reference: ${{github.event.inputs.deploy_ref}}"
 
       # Check input Auto-update-submodules
       - name: Check input Auto-update-submodules
